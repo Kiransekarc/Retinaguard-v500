@@ -7,6 +7,27 @@
     <meta name="description" content="RetinaGuard Command Center: Advanced diagnostic analytics platform for Retinitis Pigmentosa powered by the V500 multi-agent AI system.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>👁️</text></svg>">
 
+        <!-- XAI Modal -->
+    <div class="modal-overlay" id="xai-modal">
+        <div class="modal-content" style="width: 700px; max-width: 95vw; background: linear-gradient(135deg, #050a10, #0a1c2c); border-color: #00f3ff;">
+            <i class="fa-solid fa-xmark modal-close btn-hover" onclick="closeXAIModal()"></i>
+            <div class="modal-header-text" style="color: #00f3ff;">
+                <i class="fa-solid fa-brain" style="margin-right: 10px;"></i> AI EXPLANATION
+            </div>
+            
+            <div style="font-family: 'Inter', sans-serif; color: #e0e0e0; font-size: 16px; line-height: 1.6; margin-bottom: 25px;" id="xai-summary">
+                <!-- Dynamic text goes here -->
+            </div>
+            
+            <div style="background: rgba(0, 243, 255, 0.05); border-left: 3px solid #00f3ff; padding: 15px 20px;">
+                <div style="font-family: 'Orbitron'; font-size: 12px; color: #00f3ff; margin-bottom: 10px; letter-spacing: 1px;">KEY FACTORS CONSIDERED:</div>
+                <ul id="xai-bullets" style="font-family: 'Inter', sans-serif; color: #b0c4de; font-size: 14px; line-height: 1.5; margin: 0; padding-left: 20px;">
+                    <!-- Dynamic bullets go here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
@@ -1461,7 +1482,30 @@
         function closeReportDetailModal() {
             const modal = document.getElementById('report-detail-modal');
             anime({ targets: modal, opacity: 0, duration: 200, easing: 'linear',
-                complete: () => {
+                complete: function() {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+        
+        function showXAIModal() {
+            if (!currentAnalysisResult || !currentAnalysisResult.xai_explanation) return;
+            
+            const xai = currentAnalysisResult.xai_explanation;
+            document.getElementById('xai-summary').innerText = xai.summary;
+            
+            const bulletsHtml = xai.key_factors.map(f => `<li style="margin-bottom: 8px;">${f}</li>`).join('');
+            document.getElementById('xai-bullets').innerHTML = bulletsHtml;
+            
+            const modal = document.getElementById('xai-modal');
+            modal.style.display = 'flex';
+            anime({ targets: modal, opacity: 1, duration: 300, easing: 'easeOutQuad' });
+        }
+        
+        function closeXAIModal() {
+            const modal = document.getElementById('xai-modal');
+            anime({ targets: modal, opacity: 0, duration: 200, easing: 'linear',
+                complete: function() {
                     modal.style.display = 'none';
                 }
             });
@@ -1920,7 +1964,12 @@
                             
                             // Display the clinical stage in the diagnosis card for explainable AI
                             if (apiResult.rp_stage && apiResult.rp_stage !== 'N/A') {
-                                confidenceText.innerHTML = `Confidence: ${apiResult.confidence} | Score: ${confidencePercent}%<br><span style="font-size: 13px; font-weight: bold; color: ${apiResult.verdict_code === 'HEALTHY' ? '#00ff88' : '#ffa500'}; margin-top: 6px; display: inline-block; letter-spacing: 1px; text-transform: uppercase;">Clinical Stage: ${apiResult.rp_stage}</span>`;
+                                confidenceText.innerHTML = `Confidence: ${apiResult.confidence} | Score: ${confidencePercent}%<br><span style="font-size: 13px; font-weight: bold; color: ${apiResult.verdict_code === 'HEALTHY' ? '#00ff88' : '#ffa500'}; margin-top: 6px; display: inline-block; letter-spacing: 1px; text-transform: uppercase;">Clinical Stage: ${apiResult.rp_stage}</span>
+                                <div style="margin-top: 15px;">
+                                    <button onclick="showXAIModal()" style="background: rgba(0, 243, 255, 0.1); border: 1px solid #00f3ff; color: #00f3ff; padding: 6px 15px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 1px; border-radius: 4px; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);" onmouseover="this.style.background='rgba(0, 243, 255, 0.3)'" onmouseout="this.style.background='rgba(0, 243, 255, 0.1)'">
+                                        <i class="fa-solid fa-brain"></i> WHY THIS RESULT?
+                                    </button>
+                                </div>`;
                             } else {
                                 confidenceText.textContent = `Confidence: ${apiResult.confidence} | Score: ${confidencePercent}%`;
                             }
