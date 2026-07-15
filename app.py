@@ -1426,6 +1426,71 @@ def quadrant_expert(features):
         "detail": f"Asymmetry: {asymmetry:.2f} | Worst: {worst}"
     }
 
+def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pigmento, is_rpa, is_sectoral, is_cme, quality_score, risk_score):
+    # 1. AI Part
+    if ai_conf > 0.8:
+        ai_part = f"The AI is highly confident ({ai_conf*100:.1f}%) there is a problem."
+    elif ai_conf > 0.5:
+        ai_part = f"The AI suspects a problem ({ai_conf*100:.1f}%), but is not entirely sure."
+    else:
+        ai_part = f"The AI did not spot any major issues ({ai_conf*100:.1f}%)."
+
+    # 2. Extract key physical scanner results
+    has_pigment = False
+    has_vessel = False
+    for exp in expert_opinions:
+        if "Bone Spicule" in exp["name"] and exp["severity"] in ["CRITICAL", "MODERATE"]: has_pigment = True
+        if "Vessel Attenuation" in exp["name"] and exp["severity"] in ["CRITICAL", "MODERATE"]: has_vessel = True
+
+    if has_pigment and has_vessel:
+        phys_part = "The physical scanners found both classic dark spots and thin blood vessels."
+    elif has_pigment:
+        phys_part = "The physical scanners found dark spots, but blood vessels look mostly okay."
+    elif has_vessel:
+        phys_part = "The blood vessels look thin, but no classic dark spots were found."
+    else:
+        phys_part = "The physical scanners did not find classic dark spots or severe blood vessel damage."
+
+    # 3. Build Summary based on Verdict
+    if verdict_code == "SUSPICIOUS":
+        summary = f"{ai_part} {phys_part} Because the physical signs are mild, a real doctor wouldn't diagnose a rare disease just yet, so the system is playing it safe and asking for a follow-up check."
+    elif verdict_code == "RP_SINE_PIGMENTO":
+        summary = f"{ai_part} There are no dark spots (which is unusual), but the scanners agree there is severe damage to the rest of the retina. This strongly points to a rare version of the disease called Sine Pigmento."
+    elif verdict_code == "RP_RPA":
+        summary = f"{ai_part} Instead of dark spots, the scanners found significant bright white flecks. This matches a rare genetic variant called Retinitis Punctata Albescens."
+    elif verdict_code == "RP_SECTORAL":
+        summary = f"{ai_part} The scanners found that the damage is strictly isolated to one specific quadrant of the eye. This means it is Sectoral Retinitis Pigmentosa."
+    elif verdict_code in ["CLASSIC_RP", "RP_POSITIVE"]:
+        summary = f"{ai_part} {phys_part} Because the AI and the scanners both strongly agree, this is a clear case of Retinitis Pigmentosa."
+    elif verdict_code == "BORDERLINE":
+        summary = f"{ai_part} A few minor irregularities were found by the physical scanners. This is likely a benign finding or a very early sub-clinical change."
+    else:
+        summary = f"{ai_part} All the eye scanners came back normal. The retina looks completely healthy."
+
+    # 4. Build Bullet Points
+    bullets = []
+    if quality_score < 60:
+        bullets.append("Image Quality: The image was blurry or dark, but the AI enhanced it enough to analyze.")
+    else:
+        bullets.append("Image Quality: The camera image was clear and highly reliable.")
+        
+    if risk_score > 30:
+        bullets.append("Patient History: The patient's background (age/symptoms) increased the baseline risk.")
+    
+    if has_pigment:
+        bullets.append("Strongest Proof: Classic dark spots (bone spicules) were detected in the retina.")
+    elif is_sine_pigmento:
+        bullets.append("Key Finding: Severe structural damage without pigmentation was the deciding factor.")
+        
+    if is_cme:
+        bullets.append("Complication: Dangerous swelling in the macula (CME) was found, threatening central vision.")
+
+    return {
+        "summary": summary,
+        "key_factors": bullets
+    }
+
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_retinal_scan():
     """
@@ -2379,3 +2444,4 @@ if __name__ == '__main__':
     sys.stdout.flush()
     
     app.run(host='0.0.0.0', port=5001, debug=False)
+
