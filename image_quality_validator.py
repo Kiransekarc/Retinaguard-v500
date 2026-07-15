@@ -252,20 +252,58 @@ class ImageQualityValidator:
             else:
                 print(f"[+] PASS")
         
-        # CHECK 7: Vessel Network Detection (Ensures optic disc visible)
+        # CHECK 7: Vessel Network Detection (Ensures vascularization)
         vessel_coverage = self._estimate_vessel_coverage(gray)
         metrics['vessel_coverage'] = round(vessel_coverage, 4)
         
         print(f"      [7] Vessel Network: coverage={vessel_coverage:.4f}", end=" -> ")
         
         if vessel_coverage < self.MIN_VESSEL_DENSITY:
-            errors.append(f"No vessel network detected (coverage={vessel_coverage:.4f}). Minimum: {self.MIN_VESSEL_DENSITY}")
-            print(f"[X] FAIL (no vessels)")
+            print(f"[X] CRITICAL SECURITY FAILURE")
+            print(f"\\n      [X] VERDICT: REJECTED - NO BLOOD VESSELS DETECTED")
+            print(f"      Reason: The image lacks a retinal blood vessel network (Coverage: {vessel_coverage:.4f}). This is likely a non-eye object.")
+            print(f"      {'='*60}\\n")
+            sys.stdout.flush()
+            
+            return {
+                'valid': False,
+                'quality_score': 0.0,
+                'warnings': [],
+                'errors': [f"CRITICAL SECURITY REJECTION: No retinal blood vessels detected. This appears to be a non-eye object."],
+                'metrics': metrics,
+                'critical_failure': True,
+                'failure_reason': 'OOD_NO_VESSELS'
+            }
         elif vessel_coverage < self.MIN_VESSEL_DENSITY * 1.5:
             warnings.append(f"Weak vessel network (coverage={vessel_coverage:.4f})")
             print(f"[!] WARN (weak vessels)")
         else:
             print(f"[+] PASS")
+            
+        # CHECK 8: Anatomical Security (Optic Disc Detection)
+        # Prevents adversarial attacks (like a fertilized chicken egg) which have vessels but no optic disc.
+        has_optic_disc = self._detect_optic_disc(gray)
+        metrics['has_optic_disc'] = has_optic_disc
+        
+        print(f"      [8] Anatomical Security: Optic Disc=", end="")
+        if not has_optic_disc:
+            print(f"MISSING -> [X] CRITICAL SECURITY FAILURE")
+            print(f"\\n      [X] VERDICT: REJECTED - NO OPTIC DISC DETECTED")
+            print(f"      Reason: The image has vessels but lacks a human optic disc (e.g., adversarial chicken egg attack).")
+            print(f"      {'='*60}\\n")
+            sys.stdout.flush()
+            
+            return {
+                'valid': False,
+                'quality_score': 0.0,
+                'warnings': [],
+                'errors': ["CRITICAL SECURITY REJECTION: No Optic Disc detected. Adversarial non-human object suspected."],
+                'metrics': metrics,
+                'critical_failure': True,
+                'failure_reason': 'OOD_NO_OPTIC_DISC'
+            }
+        else:
+            print(f"DETECTED -> [+] PASS")
         
         # CALCULATE OVERALL QUALITY SCORE (0-100)
         quality_score = self._calculate_quality_score(metrics, errors, warnings)
@@ -354,6 +392,38 @@ class ImageQualityValidator:
         coverage = np.sum(edges > 0) / edges.size
         
         return coverage
+    
+    def _detect_optic_disc(self, gray: np.ndarray) -> bool:
+        """
+        Detects the presence of an Optic Disc (the brightest contiguous region in a retina).
+        This defeats adversarial attacks (like an egg yolk) which have no optic disc.
+        """
+        # Apply slight blur to remove noise
+        blurred = cv2.GaussianBlur(gray, (15, 15), 0)
+        
+        # Find the brightest 1% of pixels (potential optic disc)
+        max_val = np.max(blurred)
+        _, bright_mask = cv2.threshold(blurred, max_val - 30, 255, cv2.THRESH_BINARY)
+        
+        # Find contours of bright regions
+        contours, _ = cv2.findContours(bright_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if not contours:
+            return False
+            
+        # The optic disc should be a reasonably sized, somewhat circular blob
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            # Must be between 50 and 50000 pixels (to ignore small noise and giant flashes)
+            if 50 < area < 50000:
+                # Check circularity (Optic Disc is roughly circular/oval)
+                perimeter = cv2.arcLength(cnt, True)
+                if perimeter > 0:
+                    circularity = 4 * np.pi * (area / (perimeter * perimeter))
+                    if circularity > 0.3:  # 1.0 is a perfect circle. 0.3 allows for ovals.
+                        return True
+                        
+        return False
     
     def _calculate_quality_score(self, metrics: Dict, errors: list, warnings: list) -> float:
         """
