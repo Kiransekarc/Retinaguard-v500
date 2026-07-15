@@ -48,6 +48,8 @@ import sys
 import warnings
 from datetime import datetime
 import logging
+# Silence the Werkzeug HTTP request logs to prevent terminal output corruption
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 # ===== NEW: Import enhanced clinical modules =====
 from image_quality_validator import validate_image_quality
