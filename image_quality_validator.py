@@ -83,8 +83,8 @@ class ImageQualityValidator:
         errors = []
         metrics = {}
         
-        print(f"\n   [Q] IMAGE QUALITY VALIDATION for {patient_id}", flush=true)
-        print(f"      {'='*60}", flush=true)
+        print(f"\n   [Q] IMAGE QUALITY VALIDATION for {patient_id}", flush=True)
+        print(f"      {'='*60}", flush=True)
         
         # Convert to grayscale for some checks
         if len(image.shape) == 3:
@@ -114,10 +114,10 @@ class ImageQualityValidator:
         security_threshold = 85.0 if self.strict_mode else 120.0
         
         if corner_brightness > security_threshold:
-            print(f"[X] CRITICAL SECURITY FAILURE", flush=true)
-            print(f"\\n      [X] VERDICT: REJECTED - NON-RETINAL IMAGE DETECTED", flush=true)
-            print(f"      Reason: The image lacks the characteristic circular Field-Of-View mask of a fundus scan.", flush=true)
-            print(f"      {'='*60}\\n", flush=true)
+            print(f"[X] CRITICAL SECURITY FAILURE", flush=True)
+            print(f"\\n      [X] VERDICT: REJECTED - NON-RETINAL IMAGE DETECTED", flush=True)
+            print(f"      Reason: The image lacks the characteristic circular Field-Of-View mask of a fundus scan.", flush=True)
+            print(f"      {'='*60}\\n", flush=True)
             sys.stdout.flush()
             
             return {
@@ -130,7 +130,7 @@ class ImageQualityValidator:
                 'failure_reason': 'OOD_SECURITY_REJECTION'
             }
         else:
-            print(f"[+] PASS (Valid Fundus Structure)", flush=true)
+            print(f"[+] PASS (Valid Fundus Structure)", flush=True)
             
         # CHECK 1: Resolution
         height, width = gray.shape
@@ -143,11 +143,11 @@ class ImageQualityValidator:
         # CRITICAL: Hard resolution requirement (FDA specification compliance)
         # RetinaGuard requires 512×512 minimum for vessel dimensional analysis
         if width < self.MIN_RESOLUTION or height < self.MIN_RESOLUTION:
-            print(f"[X] CRITICAL FAILURE", flush=true)
-            print(f"\n      [X] VERDICT: REJECTED - RESOLUTION BELOW CLINICAL MINIMUM", flush=true)
-            print(f"      Required: {self.MIN_RESOLUTION}×{self.MIN_RESOLUTION} | Received: {width}×{height}", flush=true)
-            print(f"      Reason: Blood vessel diameter measurement requires minimum pixel density.", flush=true)
-            print(f"      {'='*60}\n", flush=true)
+            print(f"[X] CRITICAL FAILURE", flush=True)
+            print(f"\n      [X] VERDICT: REJECTED - RESOLUTION BELOW CLINICAL MINIMUM", flush=True)
+            print(f"      Required: {self.MIN_RESOLUTION}×{self.MIN_RESOLUTION} | Received: {width}×{height}", flush=True)
+            print(f"      Reason: Blood vessel diameter measurement requires minimum pixel density.", flush=True)
+            print(f"      {'='*60}\n", flush=True)
             sys.stdout.flush()
             
             # Immediate rejection - do not proceed with further checks
@@ -163,12 +163,12 @@ class ImageQualityValidator:
         
         if width < self.MIN_RESOLUTION or height < self.MIN_RESOLUTION:
             errors.append(f"Resolution too low ({width}×{height}). Minimum: {self.MIN_RESOLUTION}×{self.MIN_RESOLUTION}")
-            print(f"[X] FAIL (too small)", flush=true)
+            print(f"[X] FAIL (too small)", flush=True)
         elif width < self.OPTIMAL_RESOLUTION or height < self.OPTIMAL_RESOLUTION:
             warnings.append(f"Resolution below optimal ({width}x{height}). Recommended: {self.OPTIMAL_RESOLUTION}x{self.OPTIMAL_RESOLUTION}")
-            print(f"[!] WARN (below optimal)", flush=true)
+            print(f"[!] WARN (below optimal)", flush=True)
         else:
-            print(f"[+] PASS", flush=true)
+            print(f"[+] PASS", flush=True)
         
         # CHECK 2: Blur Detection (Laplacian Variance)
         laplacian = cv2.Laplacian(gray, cv2.CV_64F)
@@ -179,12 +179,12 @@ class ImageQualityValidator:
         
         if blur_variance < self.BLUR_THRESHOLD:
             errors.append(f"Image too blurry (variance={blur_variance:.2f}). Minimum: {self.BLUR_THRESHOLD}")
-            print(f"[X] FAIL (out of focus)", flush=true)
+            print(f"[X] FAIL (out of focus)", flush=True)
         elif blur_variance < self.BLUR_THRESHOLD * 1.5:
             warnings.append(f"Image slightly blurry (variance={blur_variance:.2f})")
-            print(f"[!] WARN (borderline focus)", flush=true)
+            print(f"[!] WARN (borderline focus)", flush=True)
         else:
-            print(f"[+] PASS (sharp)", flush=true)
+            print(f"[+] PASS (sharp)", flush=True)
         
         # CHECK 3: Brightness/Exposure
         mean_brightness = gray.mean()
@@ -194,15 +194,15 @@ class ImageQualityValidator:
         
         if mean_brightness < self.MIN_BRIGHTNESS:
             errors.append(f"Image too dark (mean={mean_brightness:.1f}). Minimum: {self.MIN_BRIGHTNESS}")
-            print(f"[X] FAIL (underexposed)", flush=true)
+            print(f"[X] FAIL (underexposed)", flush=True)
         elif mean_brightness > self.MAX_BRIGHTNESS:
             errors.append(f"Image too bright (mean={mean_brightness:.1f}). Maximum: {self.MAX_BRIGHTNESS}")
-            print(f"[X] FAIL (overexposed)", flush=true)
+            print(f"[X] FAIL (overexposed)", flush=True)
         elif mean_brightness < self.MIN_BRIGHTNESS + 20 or mean_brightness > self.MAX_BRIGHTNESS - 20:
             warnings.append(f"Brightness borderline (mean={mean_brightness:.1f}). Optimal: {self.MIN_BRIGHTNESS+20}-{self.MAX_BRIGHTNESS-20}")
-            print(f"[!] WARN (exposure borderline)", flush=true)
+            print(f"[!] WARN (exposure borderline)", flush=True)
         else:
-            print(f"[+] PASS", flush=true)
+            print(f"[+] PASS", flush=True)
         
         # CHECK 4: Contrast/Dynamic Range
         std_brightness = gray.std()
@@ -212,12 +212,12 @@ class ImageQualityValidator:
         
         if std_brightness < self.MIN_DYNAMIC_RANGE:
             errors.append(f"Insufficient contrast (std={std_brightness:.1f}). Minimum: {self.MIN_DYNAMIC_RANGE}")
-            print(f"[X] FAIL (flat contrast)", flush=true)
+            print(f"[X] FAIL (flat contrast)", flush=True)
         elif std_brightness < self.MIN_DYNAMIC_RANGE * 1.2:
             warnings.append(f"Low contrast (std={std_brightness:.1f})")
-            print(f"[!] WARN (low contrast)", flush=true)
+            print(f"[!] WARN (low contrast)", flush=True)
         else:
-            print(f"[+] PASS", flush=true)
+            print(f"[+] PASS", flush=True)
         
         # CHECK 5: Vignetting (Peripheral Darkness)
         vignetting_ratio = self._check_vignetting(gray)
@@ -227,12 +227,12 @@ class ImageQualityValidator:
         
         if vignetting_ratio < self.MAX_VIGNETTING_RATIO:
             errors.append(f"Excessive vignetting (ratio={vignetting_ratio:.3f}). Maximum: {self.MAX_VIGNETTING_RATIO}")
-            print(f"[X] FAIL (dark edges)", flush=true)
+            print(f"[X] FAIL (dark edges)", flush=True)
         elif vignetting_ratio < self.MAX_VIGNETTING_RATIO + 0.1:
             warnings.append(f"Noticeable vignetting (ratio={vignetting_ratio:.3f})")
-            print(f"[!] WARN (slight vignetting)", flush=true)
+            print(f"[!] WARN (slight vignetting)", flush=True)
         else:
-            print(f"[+] PASS", flush=true)
+            print(f"[+] PASS", flush=True)
         
         # CHECK 6: Color Balance (RGB channels)
         if len(image.shape) == 3:
@@ -248,9 +248,9 @@ class ImageQualityValidator:
             
             if max_diff > 50:
                 warnings.append(f"Color cast detected (max channel diff={max_diff:.1f})")
-                print(f"[!] WARN (color cast)", flush=true)
+                print(f"[!] WARN (color cast)", flush=True)
             else:
-                print(f"[+] PASS", flush=true)
+                print(f"[+] PASS", flush=True)
         
         # CHECK 7: Vessel Network Detection (Ensures vascularization)
         vessel_coverage = self._estimate_vessel_coverage(gray)
@@ -259,10 +259,10 @@ class ImageQualityValidator:
         print(f"      [7] Vessel Network: coverage={vessel_coverage:.4f}", end=" -> ", flush=True)
         
         if vessel_coverage < self.MIN_VESSEL_DENSITY:
-            print(f"[X] CRITICAL SECURITY FAILURE", flush=true)
-            print(f"\\n      [X] VERDICT: REJECTED - NO BLOOD VESSELS DETECTED", flush=true)
-            print(f"      Reason: The image lacks a retinal blood vessel network (Coverage: {vessel_coverage:.4f}). This is likely a non-eye object.", flush=true)
-            print(f"      {'='*60}\\n", flush=true)
+            print(f"[X] CRITICAL SECURITY FAILURE", flush=True)
+            print(f"\\n      [X] VERDICT: REJECTED - NO BLOOD VESSELS DETECTED", flush=True)
+            print(f"      Reason: The image lacks a retinal blood vessel network (Coverage: {vessel_coverage:.4f}). This is likely a non-eye object.", flush=True)
+            print(f"      {'='*60}\\n", flush=True)
             sys.stdout.flush()
             
             return {
@@ -276,9 +276,9 @@ class ImageQualityValidator:
             }
         elif vessel_coverage < self.MIN_VESSEL_DENSITY * 1.5:
             warnings.append(f"Weak vessel network (coverage={vessel_coverage:.4f})")
-            print(f"[!] WARN (weak vessels)", flush=true)
+            print(f"[!] WARN (weak vessels)", flush=True)
         else:
-            print(f"[+] PASS", flush=true)
+            print(f"[+] PASS", flush=True)
             
         # CHECK 8: Anatomical Security (Optic Disc Detection)
         # Prevents adversarial attacks (like a fertilized chicken egg) which have vessels but no optic disc.
@@ -287,10 +287,10 @@ class ImageQualityValidator:
         
         print(f"      [8] Anatomical Security: Optic Disc=", end="", flush=True)
         if not has_optic_disc:
-            print(f"MISSING -> [X] CRITICAL SECURITY FAILURE", flush=true)
-            print(f"\\n      [X] VERDICT: REJECTED - NO OPTIC DISC DETECTED", flush=true)
-            print(f"      Reason: The image has vessels but lacks a human optic disc (e.g., adversarial chicken egg attack).", flush=true)
-            print(f"      {'='*60}\\n", flush=true)
+            print(f"MISSING -> [X] CRITICAL SECURITY FAILURE", flush=True)
+            print(f"\\n      [X] VERDICT: REJECTED - NO OPTIC DISC DETECTED", flush=True)
+            print(f"      Reason: The image has vessels but lacks a human optic disc (e.g., adversarial chicken egg attack).", flush=True)
+            print(f"      {'='*60}\\n", flush=True)
             sys.stdout.flush()
             
             return {
@@ -303,7 +303,7 @@ class ImageQualityValidator:
                 'failure_reason': 'OOD_NO_OPTIC_DISC'
             }
         else:
-            print(f"DETECTED -> [+] PASS", flush=true)
+            print(f"DETECTED -> [+] PASS", flush=True)
         
         # CALCULATE OVERALL QUALITY SCORE (0-100)
         quality_score = self._calculate_quality_score(metrics, errors, warnings)
@@ -311,15 +311,15 @@ class ImageQualityValidator:
         # DETERMINE VALIDITY
         valid = len(errors) == 0
         if not valid:
-            print(f"\n      [X] VERDICT: REJECTED (Quality Score: {quality_score:.1f}/100)", flush=true)
-            print(f"      Errors: {len(errors)} | Warnings: {len(warnings)}", flush=true)
+            print(f"\n      [X] VERDICT: REJECTED (Quality Score: {quality_score:.1f}/100)", flush=True)
+            print(f"      Errors: {len(errors)} | Warnings: {len(warnings)}", flush=True)
         elif len(warnings) > 0:
-            print(f"\n      [!] VERDICT: ACCEPTED WITH WARNINGS (Quality Score: {quality_score:.1f}/100)", flush=true)
-            print(f"      Warnings: {len(warnings)}", flush=true)
+            print(f"\n      [!] VERDICT: ACCEPTED WITH WARNINGS (Quality Score: {quality_score:.1f}/100)", flush=True)
+            print(f"      Warnings: {len(warnings)}", flush=True)
         else:
-            print(f"\n      [+] VERDICT: EXCELLENT QUALITY (Quality Score: {quality_score:.1f}/100)", flush=true)
+            print(f"\n      [+] VERDICT: EXCELLENT QUALITY (Quality Score: {quality_score:.1f}/100)", flush=True)
         
-        print(f"      {'='*60}\n", flush=true)
+        print(f"      {'='*60}\n", flush=True)
         sys.stdout.flush()
         
         return {
@@ -470,30 +470,30 @@ def validate_image_quality(image: np.ndarray, patient_id: str = "UNKNOWN", stric
 
 # Testing harness
 if __name__ == "__main__":
-    print("="*80, flush=true)
-    print("IMAGE QUALITY VALIDATOR - TEST SUITE", flush=true)
-    print("="*80, flush=true)
+    print("="*80, flush=True)
+    print("IMAGE QUALITY VALIDATOR - TEST SUITE", flush=True)
+    print("="*80, flush=True)
     
     # Test Case 1: Normal quality image
     test_image = np.random.randint(50, 200, size=(1024, 1024, 3), dtype=np.uint8)
     result = validate_image_quality(test_image, "TEST-001")
-    print(f"\nTest 1 - Normal Image: {'PASS' if result['valid'] else 'FAIL'}", flush=true)
+    print(f"\nTest 1 - Normal Image: {'PASS' if result['valid'] else 'FAIL'}", flush=True)
     
     # Test Case 2: Blurry image (apply heavy Gaussian blur)
     blurry = cv2.GaussianBlur(test_image, (51, 51), 0)
     result = validate_image_quality(blurry, "TEST-002")
-    print(f"Test 2 - Blurry Image: {'REJECTED (expected)' if not result['valid'] else 'UNEXPECTED PASS'}", flush=true)
+    print(f"Test 2 - Blurry Image: {'REJECTED (expected)' if not result['valid'] else 'UNEXPECTED PASS'}", flush=True)
     
     # Test Case 3: Low resolution
     low_res = cv2.resize(test_image, (256, 256))
     result = validate_image_quality(low_res, "TEST-003")
-    print(f"Test 3 - Low Resolution: {'REJECTED (expected)' if not result['valid'] else 'UNEXPECTED PASS'}", flush=true)
+    print(f"Test 3 - Low Resolution: {'REJECTED (expected)' if not result['valid'] else 'UNEXPECTED PASS'}", flush=True)
     
     # Test Case 4: Overexposed
     overexposed = np.ones((1024, 1024, 3), dtype=np.uint8) * 240
     result = validate_image_quality(overexposed, "TEST-004")
-    print(f"Test 4 - Overexposed: {'REJECTED (expected)' if not result['valid'] else 'UNEXPECTED PASS'}", flush=true)
+    print(f"Test 4 - Overexposed: {'REJECTED (expected)' if not result['valid'] else 'UNEXPECTED PASS'}", flush=True)
     
-    print("\n" + "="*80, flush=true)
-    print("VALIDATION COMPLETE", flush=true)
-    print("="*80, flush=true)
+    print("\n" + "="*80, flush=True)
+    print("VALIDATION COMPLETE", flush=True)
+    print("="*80, flush=True)
