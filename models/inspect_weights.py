@@ -3,7 +3,7 @@ from tensorflow.keras.models import load_model
 
 # 1. Load the uncorrupted model
 print("Loading model...")
-model = load_model('RetinaGuard_Clinical_Balanced.h5')
+model = load_model('recovered_model.h5')
 
 # 2. Get all the layers in the model
 print("\n=== MODEL ARCHITECTURE ===")
@@ -18,12 +18,12 @@ weights_and_biases = first_layer.get_weights()
 if len(weights_and_biases) > 0:
     weights = weights_and_biases[0]
     biases = weights_and_biases[1]
-    
+
     print("\n=== INSPECTING WEIGHTS (First Layer) ===")
     print(f"Layer Name: {first_layer.name}")
     print(f"Weight Matrix Shape: {weights.shape}")
     print(f"Bias Array Shape: {biases.shape}")
-    
+
     print("\nHere are the actual mathematical weights (first 5 values) that the AI learned:")
     print(weights.flatten()[:5])
 else:
