@@ -1,9 +1,19 @@
 import logging
 
 def log_print(*args, **kwargs):
-    logger = logging.getLogger(__name__)
+    # BYPASS Python's complex logging module to guarantee it prints to the VSCode terminal!
+    # Remove kwargs that print doesn't support if any slipped through
+    kwargs.pop('flush', None)
     msg = " ".join(str(a) for a in args)
-    logger.info(msg)
+    
+    # Also log to file for history
+    try:
+        with open('retinaguard_analysis.log', 'a', encoding='utf-8') as f:
+            f.write(msg + '\n')
+    except Exception:
+        pass
+        
+    print(msg, file=sys.stderr, flush=True)
 
 """
 ================================================================================
@@ -105,7 +115,8 @@ class LoggerWriter:
     def buffer(self):
         return self
 
-sys.stdout = LoggerWriter(logger.info)
+# CRITICAL FIX: Do not intercept sys.stdout! Let it print directly to the terminal!
+# sys.stdout = LoggerWriter(logger.info)
 
 warnings.filterwarnings('ignore')
 
