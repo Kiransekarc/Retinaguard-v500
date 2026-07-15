@@ -2055,7 +2055,8 @@ def analyze_retinal_scan():
             "patient_risk_profile": patient_data if patient_data else None,
             # FRONTEND COMPATIBILITY: Add commonly accessed fields at root level
             "quality_score": quality_result.get('quality_score') if quality_result else None,
-            "angiography_warning": f"[!] ANGIOGRAPHY DETECTED: This appears to be a fluorescein/ICG angiography image. Results may be less reliable than color fundus analysis. ({angio_reason})" if is_angio else None
+            "angiography_warning": f"[!] ANGIOGRAPHY DETECTED: This appears to be a fluorescein/ICG angiography image. Results may be less reliable than color fundus analysis. ({angio_reason})" if is_angio else None,
+            "xai_explanation": generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pigmento, is_rpa, is_sectoral, is_cme, quality_result.get("quality_score", 100) if quality_result else 100, risk_score)
         }
         
         # Add cache control headers to prevent browser caching
