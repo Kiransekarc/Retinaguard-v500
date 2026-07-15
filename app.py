@@ -261,12 +261,36 @@ if TENSORFLOW_AVAILABLE:
     try:
         import tensorflow as tf
         from tensorflow import keras
+        
+        # MEMORY FIX: Force GPU memory growth to prevent OOM
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        if gpus:
+            try:
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+            except RuntimeError as e:
+                log_print(f"[!] GPU Memory Growth error: {e}")
+                
+        # MEMORY FIX: Clear any zombie Keras sessions
+        keras.backend.clear_session()
+        
         if os.path.exists(CONFIG["MODEL_PATH"]):
-            # Use Keras 3.x directly - model was saved with Keras 3.10
-            DEEP_LEARNING_MODEL = keras.models.load_model(CONFIG["MODEL_PATH"], compile=False)
-            log_print(f"[+] Loaded model from {CONFIG['MODEL_PATH']}")
+            try:
+                # Use Keras 3.x directly - model was saved with Keras 3.10
+                DEEP_LEARNING_MODEL = keras.models.load_model(CONFIG["MODEL_PATH"], compile=False)
+                log_print(f"[+] Loaded model from {CONFIG['MODEL_PATH']} (GPU Accelerated)")
+            except Exception as e:
+                if "Out of memory" in str(e):
+                    log_print(f"[!] OOM Error detected! Falling back to CPU mode...")
+                    # Force CPU mode for model loading if VRAM is exhausted
+                    with tf.device('/CPU:0'):
+                        DEEP_LEARNING_MODEL = keras.models.load_model(CONFIG["MODEL_PATH"], compile=False)
+                        log_print(f"[+] Loaded model from {CONFIG['MODEL_PATH']} (CPU Fallback Mode)")
+                else:
+                    raise e
     except Exception as e:
-        log_print(f"[!] Could not load model: {e}")
+        log_print(f"[!] CRITICAL: Could not load deep learning model: {e}")
+        log_print(f"[!] System will run in rule-based fallback mode. Results will be less accurate!")
 
 # ==============================================================================
 #   FEATURE EXTRACTION - Clinical Analysis (FOV-Masked)
