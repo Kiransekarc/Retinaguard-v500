@@ -62,9 +62,11 @@ from fda_submission_generator import FDASubmissionGenerator
 # ==================================================
 
 # Configure logging to BOTH file and console (using stderr for reliable terminal output)
+# force=True is CRITICAL because TensorFlow warnings might prematurely initialize the logger!
 logging.basicConfig(
     level=logging.INFO,
     format='%(message)s',
+    force=True,
     handlers=[
         logging.FileHandler('retinaguard_analysis.log', mode='w', encoding='utf-8'),
         logging.StreamHandler(sys.stderr)
@@ -126,7 +128,7 @@ os.makedirs(MODEL_PATH, exist_ok=True)
 
 CONFIG = {
     # Model path
-    "MODEL_PATH": f"{MODEL_PATH}/RetinaGuard_Clinical_Balanced.h5",
+    "MODEL_PATH": f"{MODEL_PATH}/recovered_model.h5",
     "INPUT_SIZE": (224, 224),
 
     # EXPERT WEIGHTS - 10 CLINICAL SCANNERS (Total = 1.00)
