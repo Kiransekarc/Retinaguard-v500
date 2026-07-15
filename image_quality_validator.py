@@ -92,6 +92,46 @@ class ImageQualityValidator:
         else:
             gray = image
         
+        # CHECK 0: Structural Integrity (Security/OOD Check)
+        # Rejects non-eye images (e.g., selfies, dogs) by checking for the circular FOV mask.
+        h, w = gray.shape
+        corner_size = max(10, min(h, w) // 10)
+        
+        corners = [
+            gray[0:corner_size, 0:corner_size],
+            gray[0:corner_size, w-corner_size:w],
+            gray[h-corner_size:h, 0:corner_size],
+            gray[h-corner_size:h, w-corner_size:w]
+        ]
+        
+        # Fundus images are circles in a black square (corners are pitch black). Natural images have bright corners.
+        corner_brightness = np.mean([np.mean(c) for c in corners])
+        metrics['corner_brightness'] = round(corner_brightness, 2)
+        
+        print(f"      [0] Structural Security: corner_brightness={corner_brightness:.1f}", end=" -> ")
+        
+        # If strict mode is off, we are more lenient for cropped images
+        security_threshold = 85.0 if self.strict_mode else 120.0
+        
+        if corner_brightness > security_threshold:
+            print(f"[X] CRITICAL SECURITY FAILURE")
+            print(f"\\n      [X] VERDICT: REJECTED - NON-RETINAL IMAGE DETECTED")
+            print(f"      Reason: The image lacks the characteristic circular Field-Of-View mask of a fundus scan.")
+            print(f"      {'='*60}\\n")
+            sys.stdout.flush()
+            
+            return {
+                'valid': False,
+                'quality_score': 0.0,
+                'warnings': [],
+                'errors': [f"CRITICAL SECURITY REJECTION: Image appears to be a natural photo (corner brightness {corner_brightness:.1f} > {security_threshold}), not a fundus scan. Please upload a valid retina image."],
+                'metrics': metrics,
+                'critical_failure': True,
+                'failure_reason': 'OOD_SECURITY_REJECTION'
+            }
+        else:
+            print(f"[+] PASS (Valid Fundus Structure)")
+            
         # CHECK 1: Resolution
         height, width = gray.shape
         metrics['resolution'] = f"{width}×{height}"
