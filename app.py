@@ -1438,9 +1438,11 @@ def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pig
     # 2. Extract key physical scanner results
     has_pigment = False
     has_vessel = False
+    has_other_damage = False
     for exp in expert_opinions:
         if "Bone Spicule" in exp["name"] and exp["severity"] in ["CRITICAL", "MODERATE"]: has_pigment = True
-        if "Vessel Attenuation" in exp["name"] and exp["severity"] in ["CRITICAL", "MODERATE"]: has_vessel = True
+        elif "Vessel Attenuation" in exp["name"] and exp["severity"] in ["CRITICAL", "MODERATE"]: has_vessel = True
+        elif exp["severity"] in ["CRITICAL", "MODERATE"]: has_other_damage = True
 
     if has_pigment and has_vessel:
         phys_part = "The physical scanners found both classic dark spots and thin blood vessels."
@@ -1448,12 +1450,14 @@ def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pig
         phys_part = "The physical scanners found dark spots, but blood vessels look mostly okay."
     elif has_vessel:
         phys_part = "The blood vessels look thin, but no classic dark spots were found."
+    elif has_other_damage:
+        phys_part = "While classic dark spots were absent, the scanners detected other significant structural damage in the retina."
     else:
-        phys_part = "The physical scanners did not find classic dark spots or severe blood vessel damage."
+        phys_part = "The physical scanners did not find any severe structural damage."
 
     # 3. Build Summary based on Verdict
     if verdict_code == "SUSPICIOUS":
-        summary = f"{ai_part} {phys_part} Because the physical signs are mild, a real doctor wouldn't diagnose a rare disease just yet, so the system is playing it safe and asking for a follow-up check."
+        summary = f"{ai_part} {phys_part} Because the physical signs are mild or unusual, a real doctor wouldn't diagnose a rare disease just yet. The system is playing it safe and asking for a follow-up check."
     elif verdict_code == "RP_SINE_PIGMENTO":
         summary = f"{ai_part} There are no dark spots (which is unusual), but the scanners agree there is severe damage to the rest of the retina. This strongly points to a rare version of the disease called Sine Pigmento."
     elif verdict_code == "RP_RPA":
@@ -1461,7 +1465,10 @@ def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pig
     elif verdict_code == "RP_SECTORAL":
         summary = f"{ai_part} The scanners found that the damage is strictly isolated to one specific quadrant of the eye. This means it is Sectoral Retinitis Pigmentosa."
     elif verdict_code in ["CLASSIC_RP", "RP_POSITIVE"]:
-        summary = f"{ai_part} {phys_part} Because the AI and the scanners both strongly agree, this is a clear case of Retinitis Pigmentosa."
+        if has_pigment and has_vessel and ai_conf > 0.8:
+            summary = f"{ai_part} {phys_part} Because the AI and the scanners both strongly agree on the classic signs, this is a clear case of Retinitis Pigmentosa."
+        else:
+            summary = f"{ai_part} {phys_part} Even though it is not a textbook presentation, the combination of AI suspicion and physical scanner evidence is enough to confirm a positive diagnosis of Retinitis Pigmentosa."
     elif verdict_code == "BORDERLINE":
         summary = f"{ai_part} A few minor irregularities were found by the physical scanners. This is likely a benign finding or a very early sub-clinical change."
     else:
@@ -1472,13 +1479,15 @@ def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pig
     if quality_score < 60:
         bullets.append("Image Quality: The image was blurry or dark, but the AI enhanced it enough to analyze.")
     else:
-        bullets.append("Image Quality: The camera image was clear and highly reliable.")
+        bullets.append("Image Quality: The camera image was clear and reliable.")
         
     if risk_score > 30:
         bullets.append("Patient History: The patient's background (age/symptoms) increased the baseline risk.")
     
     if has_pigment:
         bullets.append("Strongest Proof: Classic dark spots (bone spicules) were detected in the retina.")
+    elif has_other_damage and not is_sine_pigmento:
+        bullets.append("Key Finding: Secondary structural damage (like texture or spatial loss) supported the diagnosis.")
     elif is_sine_pigmento:
         bullets.append("Key Finding: Severe structural damage without pigmentation was the deciding factor.")
         
