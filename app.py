@@ -1483,7 +1483,10 @@ def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pig
     elif verdict_code == "BORDERLINE":
         summary = f"{ai_part} A few minor irregularities were found by the physical scanners. This is likely a benign finding or a very early sub-clinical change."
     else:
-        summary = f"{ai_part} All the eye scanners came back normal. The retina looks completely healthy."
+        if ai_conf > 0.60:
+            summary = f"{ai_part} However, the physical scanners found zero critical evidence of disease. The system determined the AI was likely tricked by bright light artifacts or glare, and correctly overruled it. The retina is healthy."
+        else:
+            summary = f"{ai_part} All the eye scanners came back normal. The retina looks completely healthy."
 
     # 4. Build Bullet Points
     bullets = []
@@ -1954,23 +1957,32 @@ def analyze_retinal_scan():
         
         # ========== BORDERLINE VERDICTS (MONITOR) ==========
         
-        # RULE 6: BORDERLINE - Minor Findings Only
-        # 2+ MILD findings but no strong clinical votes
+        # RULE 6: AI HALLUCINATION OVERRIDE - Healthy despite AI
+        # If AI is confident but clinical experts strongly disagree (0 votes)
+        # This is almost always an artifact (like bright lesions/glare) tricking the AI.
+        elif ai_confidence > 0.60 and clinical_rp_votes == 0:
+            verdict = "NEGATIVE: HEALTHY RETINA - NO RP DETECTED (AI OVERRIDDEN)"
+            confidence = "HIGH"
+            verdict_code = "HEALTHY"
+            log_print(f"      → Rule 6: AI OVERRIDDEN (AI={ai_confidence*100:.1f}%, but 0 clinical votes)")
+            
+        # RULE 7: BORDERLINE - Minor Findings Only
+        # 2+ MILD findings but no strong clinical votes (and AI is not heavily hallucinating)
         elif mild_findings >= 2 and clinical_rp_votes == 0:
             verdict = "BORDERLINE: MINOR FINDINGS - RECOMMEND MONITORING"
             confidence = "LOW"
             verdict_code = "BORDERLINE"
-            log_print(f"      → Rule 6: MINOR FINDINGS ONLY (AI={ai_confidence*100:.1f}%, {mild_findings} mild findings)")
+            log_print(f"      → Rule 7: MINOR FINDINGS ONLY (AI={ai_confidence*100:.1f}%, {mild_findings} mild findings)")
 
         # ========== NEGATIVE VERDICTS (HEALTHY) ==========
         
-        # RULE 7: NEGATIVE - No Evidence of RP
+        # RULE 8: NEGATIVE - No Evidence of RP
         else:
             verdict = "NEGATIVE: HEALTHY RETINA - NO RP DETECTED"
             # Lower confidence if there are any MILD findings
             confidence = "HIGH" if mild_findings == 0 else "MODERATE"
             verdict_code = "HEALTHY"
-            log_print(f"      -> Rule 7: INSUFFICIENT EVIDENCE (Mild={mild_findings}, Clinical votes={clinical_rp_votes}, AI={ai_confidence*100:.1f}%)")
+            log_print(f"      -> Rule 8: INSUFFICIENT EVIDENCE (Mild={mild_findings}, Clinical votes={clinical_rp_votes}, AI={ai_confidence*100:.1f}%)")
 
         # Cap score at 0.999 to prevent exceeding 100%
         base_score = min(base_score, 0.999)
