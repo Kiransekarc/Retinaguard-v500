@@ -1795,7 +1795,7 @@ def analyze_retinal_scan():
         # Clinical condition: vessels + optic disc abnormal + no pigment + peripheral degeneration signs
         vessel_abnormal = vessel_severity in ['MILD', 'MODERATE', 'CRITICAL']
         optic_abnormal = optic_severity in ['MILD', 'MODERATE', 'CRITICAL']
-        spatial_abnormal = spatial_result['severity'] in ['MILD', 'MODERATE', 'CRITICAL'] or features['spatial']['peripheral_degradation'] >= 0.25
+        spatial_abnormal = spatial_result['severity'] in ['MILD', 'MODERATE', 'CRITICAL']
         has_clinical_sine_pigmento = vessel_abnormal and optic_abnormal and (pigment_conf < CONFIG["SINE_PIGMENTO_PIGMENT_MAX"]) and (texture_severity in ['MODERATE', 'CRITICAL'] or spatial_abnormal)
         
         # Pathway #1: Retinitis Punctata Albescens (white flecks instead of dark)
