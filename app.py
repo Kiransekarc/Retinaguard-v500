@@ -1240,20 +1240,22 @@ def texture_degeneration_expert(features, is_angiography=False):
         severity = "MODERATE"
         confidence = 0.70
         significance = CONFIG["SIGNIFICANCE_MULTIPLIERS"]["texture_irregular"]
-        if is_angiography:
-            status += " (verify color fundus)"
     elif entropy > CONFIG["TEXTURE_ENTROPY_MILD"] or local_var > CONFIG["TEXTURE_LOCAL_MILD"]:
         status = "MODERATE CHANGES"
         severity = "MILD"
         confidence = 0.50
         significance = 1.0
-        if is_angiography:
-            status += " (angio contrast)"
     else:
         status = "NORMAL"
         severity = "NORMAL"
         confidence = 0.25
         significance = 1.0
+        
+    if is_angiography:
+        status += " (ANGIO ARTIFACT - IGNORED)"
+        severity = "NORMAL"
+        confidence = 0.10
+        significance = 0.0
     
     return {
         "status": status,
@@ -1264,7 +1266,7 @@ def texture_degeneration_expert(features, is_angiography=False):
         "detail": f"Entropy: {entropy:.2f}, Local: {local_var:.1f} (Normal: <{CONFIG['TEXTURE_ENTROPY_MILD']}/<{CONFIG['TEXTURE_LOCAL_MILD']})"
     }
 
-def spatial_pattern_expert(features):
+def spatial_pattern_expert(features, is_angiography=False):
     """Expert #7: Supporting - Spatial Pattern"""
     periph_deg = features['spatial']['peripheral_degradation']
     
@@ -1288,6 +1290,12 @@ def spatial_pattern_expert(features):
         severity = "NORMAL"
         confidence = 0.20
         significance = 1.0
+        
+    if is_angiography:
+        status += " (ANGIO ARTIFACT - IGNORED)"
+        severity = "NORMAL"
+        confidence = 0.10
+        significance = 0.0
     
     return {
         "status": status,
@@ -1675,7 +1683,7 @@ def analyze_retinal_scan():
         optic_result = optic_disc_pallor_expert(features)
         tortuosity_result = vessel_tortuosity_expert(features)
         texture_result = texture_degeneration_expert(features, is_angiography=is_angio)
-        spatial_result = spatial_pattern_expert(features)
+        spatial_result = spatial_pattern_expert(features, is_angiography=is_angio)
         
         # NEW: 3 additional variant/complication scanners
         bright_lesion_result = bright_lesion_expert(features)
