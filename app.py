@@ -1467,7 +1467,10 @@ def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pig
     if verdict_code == "SUSPICIOUS":
         summary = f"{ai_part} {phys_part} Because the physical signs are mild or unusual, a real doctor wouldn't diagnose a rare disease just yet. The system is playing it safe and asking for a follow-up check."
     elif verdict_code == "RP_SINE_PIGMENTO":
-        summary = f"{ai_part} There are no dark spots (which is unusual), but the scanners agree there is severe damage to the rest of the retina. This strongly points to a rare version of the disease called Sine Pigmento."
+        if has_other_damage:
+            summary = f"{ai_part} Although there are no dark pigment spots (which is unusual), the scanners detected significant structural damage in the blood vessels and optic disc. This strongly points to a rare variant of the disease called Sine Pigmento."
+        else:
+            summary = f"{ai_part} Despite the lack of classic dark spots and the AI's low suspicion, the physical scanners detected subtle but critical changes in the blood vessels, optic disc, and peripheral retina. This combination is the hallmark of the rare Sine Pigmento variant."
     elif verdict_code == "RP_RPA":
         summary = f"{ai_part} Instead of dark spots, the scanners found significant bright white flecks. This matches a rare genetic variant called Retinitis Punctata Albescens."
     elif verdict_code == "RP_SECTORAL":
@@ -1497,7 +1500,7 @@ def generate_xai_explanation(ai_conf, expert_opinions, verdict_code, is_sine_pig
     elif has_other_damage and not is_sine_pigmento:
         bullets.append("Key Finding: Secondary structural damage (like texture or spatial loss) supported the diagnosis.")
     elif is_sine_pigmento:
-        bullets.append("Key Finding: Severe structural damage without pigmentation was the deciding factor.")
+        bullets.append("Key Finding: Clinical signs (vessel/optic disc changes) without pigmentation were the deciding factor.")
         
     if is_cme:
         bullets.append("Complication: Dangerous swelling in the macula (CME) was found, threatening central vision.")
@@ -1795,7 +1798,7 @@ def analyze_retinal_scan():
         # Clinical condition: vessels + optic disc abnormal + no pigment + peripheral degeneration signs
         vessel_abnormal = vessel_severity in ['MILD', 'MODERATE', 'CRITICAL']
         optic_abnormal = optic_severity in ['MILD', 'MODERATE', 'CRITICAL']
-        spatial_abnormal = spatial_result['severity'] in ['MILD', 'MODERATE', 'CRITICAL']
+        spatial_abnormal = spatial_result['severity'] in ['MILD', 'MODERATE', 'CRITICAL'] or features['spatial']['peripheral_degradation'] >= 0.25
         has_clinical_sine_pigmento = vessel_abnormal and optic_abnormal and (pigment_conf < CONFIG["SINE_PIGMENTO_PIGMENT_MAX"]) and (texture_severity in ['MODERATE', 'CRITICAL'] or spatial_abnormal)
         
         # Pathway #1: Retinitis Punctata Albescens (white flecks instead of dark)
