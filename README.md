@@ -1,4 +1,4 @@
-# RetinaGuard V500 👁️🤖
+# RetinaGuard V500 
 **An Advanced Clinical Decision Support System for Retinitis Pigmentosa**
 
 ![RetinaGuard V500](https://img.shields.io/badge/Status-Review%200%20Ready-success)
