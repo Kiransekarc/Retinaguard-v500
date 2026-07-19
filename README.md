@@ -103,51 +103,7 @@ Through extensive review of the existing methodologies, we identified three crit
 
 The system architecture is designed as a multi-stage, hybrid pipeline that intercepts the input image, validates its clinical integrity, and runs parallel deterministic and probabilistic analyses before reaching a final, rules-based consensus.
 
-```mermaid
-graph TD
-    A[Raw Fundus Image Input] --> B{Image Quality Validator}
-    
-    B -->|Blur/Glare/Cropped| C[Reject / Request Retake]
-    B -->|Passed| D[Camera Calibration & Color Normalization]
-    
-    D --> E[Parallel Analysis Pipeline]
-    
-    %% AI Branch
-    E --> F[Deep Learning Core CNN]
-    F --> G[Probabilistic Anomaly Score]
-    
-    %% Clinical Expert Branch
-    E --> H[10-Expert Computer Vision Extractors]
-    H --> I1[Vessel Attenuation Density]
-    H --> I2[Bone Spicule Clusters LAB Space]
-    H --> I3[Optic Disc Pallor Analysis]
-    H --> I4[Spatial & Texture Degeneration]
-    H --> I5[Macula CME / Sectoral Analysis]
-    
-    I1 --> J[Clinical Features Matrix]
-    I2 --> J
-    I3 --> J
-    I4 --> J
-    I5 --> J
-    
-    G --> K{Rules-Based Decision Engine}
-    J --> K
-    
-    %% Patient History
-    L[Patient History Module Age, Symptoms, Genetics] --> K
-    
-    K --> M{Differential Diagnosis Engine}
-    
-    M -->|Primary RP Detected| N[Severity Staging & Variant Identification]
-    M -->|Other Pathology Detected| O[Identify Mimic e.g., Syphilis, DR, AMD]
-    M -->|Healthy| P[Healthy Retina Verdict]
-    
-    N --> Q[XAI Clinical Report Generator]
-    O --> Q
-    P --> Q
-    
-    Q --> R[FDA 510k Compliant Output JSON]
-```
+![Architectural Workflow Diagram](college_docs/architecture.png)
 
 ---
 
