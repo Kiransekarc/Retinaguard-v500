@@ -15,6 +15,12 @@ Retinitis Pigmentosa (RP) is a rare genetic eye disease causing severe vision lo
 
 ---
 
+## Project Contributors
+
+- 23CSR110 - KIRAN SEKAR C
+- 23CSR117 - LOKESH P
+- 23CSR124 - MANOJ P
+
 ## 📄 Base Paper & Limitations
 **Reference Base Paper Concept:** *Deep learning models for the automated detection of Retinitis Pigmentosa from color fundus photographs.*
 
